@@ -42,11 +42,7 @@ public final class BlipMetaDomImplTest extends TestCase {
     assertNull(BlipMetaDomImpl.resolveInlineLocatorReference(null, "inline-2"));
   }
 
-<<<<<<<< HEAD:wave/src/test/java/org/waveprotocol/wavepanel/view/dom/BlipMetaDomImplTest.java
-  public void testResolveInlineLocatorReferenceReturnsNullWhenRefIdNull() {
-========
   public void testResolveInlineLocatorReferenceReturnsNullWhenReferenceNull() {
->>>>>>>> 8eaf2f66 (fix: include inline anchor regression test):wave/src/jakarta-test/java/org/waveprotocol/wave/client/wavepanel/view/dom/BlipMetaDomImplTest.java
     StringSequence inlineLocators = StringSequence.of(java.util.List.of("inline-1", "inline-2"));
 
     assertNull(BlipMetaDomImpl.resolveInlineLocatorReference(inlineLocators, null));

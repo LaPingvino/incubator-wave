@@ -209,6 +209,10 @@ message ProtocolSignature {
 
   enum SignatureAlgorithm {
     SHA1_RSA = 1;
+    // Ed25519 signature algorithm for HTTP federation transport (Phase 1).
+    // Added to support lightweight key exchange without X.509 certificate chains.
+    // See docs/wave-federation-spec-draft.md section 4.3.
+    ED25519 = 2;
   }
 
   required bytes signature_bytes = 1;

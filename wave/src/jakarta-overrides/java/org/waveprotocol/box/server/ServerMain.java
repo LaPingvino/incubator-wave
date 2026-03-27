@@ -46,6 +46,7 @@ import org.waveprotocol.box.server.waveserver.lucene9.Lucene9WaveIndexerImpl;
 import org.waveprotocol.wave.crypto.CertPathStore;
 import org.waveprotocol.wave.federation.FederationTransport;
 import org.waveprotocol.wave.federation.noop.NoOpFederationModule;
+import org.waveprotocol.wave.federation.http.HttpFederationModule;
 import org.waveprotocol.wave.model.version.HashedVersionFactory;
 import org.waveprotocol.wave.model.wave.ParticipantId;
 import org.waveprotocol.wave.model.wave.ParticipantIdUtil;
@@ -129,14 +130,41 @@ public class ServerMain {
     initializeContacts(injector, waveBus);
     initializeFrontend(injector, server, waveBus);
     initializeSearch(injector, waveBus, config);
+    initializeFederation(injector);
     initializeShutdownHandler(server);
 
     LOG.info("Starting server");
     server.startWebSocketServer(injector);
   }
 
+  /**
+   * Builds the federation Guice module based on configuration.
+   *
+   * <p>When {@code federation.enable_federation} is true and
+   * {@code federation.transport} is "http", returns the HTTP federation
+   * module that implements the Wave Federation Protocol over HTTPS/WebSocket.
+   * Otherwise returns the no-op module that rejects all federation requests.
+   *
+   * @see org.waveprotocol.wave.federation.http.HttpFederationModule
+   * @see <a href="docs/wave-federation-spec-draft.md">Federation Protocol Spec</a>
+   */
   private static Module buildFederationModule(Injector settingsInjector) {
-    return settingsInjector.getInstance(NoOpFederationModule.class);
+    Config config = settingsInjector.getInstance(Config.class);
+    boolean enabled = config.hasPath("federation.enable_federation")
+        && config.getBoolean("federation.enable_federation");
+    String transport = config.hasPath("federation.transport")
+        ? config.getString("federation.transport") : "noop";
+
+    if (enabled && "http".equalsIgnoreCase(transport)) {
+      LOG.info("Federation enabled with HTTP transport");
+      return settingsInjector.getInstance(HttpFederationModule.class);
+    } else {
+      if (enabled) {
+        LOG.info("Federation enabled but transport '" + transport
+            + "' is not supported; falling back to no-op");
+      }
+      return settingsInjector.getInstance(NoOpFederationModule.class);
+    }
   }
 
   private static void initializeServer(Injector injector, String waveDomain)
@@ -320,6 +348,18 @@ public class ServerMain {
     // SEO endpoints
     server.addServlet("/robots.txt", RobotsServlet.class);
     server.addServlet("/sitemap.xml", SitemapServlet.class);
+
+    // Federation endpoints (active regardless of federation.enable_federation;
+    // the servlets themselves return 404/503 when federation is disabled,
+    // ensuring the .well-known endpoint is always discoverable).
+    server.addServlet("/.well-known/wave/server",
+        org.waveprotocol.wave.federation.http.WellKnownWaveServlet.class);
+    server.addServlet("/_wave/keys/v1",
+        org.waveprotocol.wave.federation.http.FederationKeysServlet.class);
+    server.addServlet("/_wave/federation/v1/submit",
+        org.waveprotocol.wave.federation.http.FederationSubmitServlet.class);
+    server.addServlet("/_wave/federation/v1/history/*",
+        org.waveprotocol.wave.federation.http.FederationHistoryServlet.class);
 
     server.addServlet("/", WaveClientServlet.class);
   }

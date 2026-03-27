@@ -295,7 +295,12 @@ libraryDependencies ++= Seq(
   "net.oauth.core"                 % "oauth-provider"             % "20090531",
 
   // --- Crypto ---
-  "org.bouncycastle"               % "bcprov-jdk16"               % "1.45",
+  // Upgraded from bcprov-jdk16:1.45 to jdk18on for Ed25519 support in HTTP
+  // federation transport.  Note: Ed25519 signing/verification uses Java 17's
+  // built-in java.security APIs; BouncyCastle is retained for legacy X.509
+  // certificate chain operations only.
+  "org.bouncycastle"               % "bcprov-jdk18on"             % "1.78.1",
+  "org.bouncycastle"               % "bcpkix-jdk18on"             % "1.78.1",
 
   // --- Persistence ---
   "javax.jdo"                      % "jdo2-api"                   % "2.1",
